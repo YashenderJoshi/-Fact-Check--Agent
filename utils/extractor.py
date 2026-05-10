@@ -40,9 +40,10 @@ def extract_claims(text: str, api_key: str) -> list[dict]:
     Uses Groq (Llama 3) to extract factual claims from the provided text.
     Returns a list of dicts: [{claim, type}, ...]
     """
+
     client = Groq(api_key=api_key)
 
-    # Truncate if very long to stay within token limits
+    # Truncate long text
     truncated = text[:12000] if len(text) > 12000 else text
 
     prompt = EXTRACTION_PROMPT.format(text=truncated)
@@ -51,31 +52,50 @@ def extract_claims(text: str, api_key: str) -> list[dict]:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             max_tokens=2000,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
         )
 
         raw = response.choices[0].message.content.strip()
 
-        # Strip markdown fences if present
+        # Remove markdown fences if present
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
         raw = re.sub(r"\s*```$", "", raw)
 
         claims = json.loads(raw)
 
-        # Normalise: ensure each item is a dict with a 'claim' key
-        normalised = []
+        # Normalize response
+        normalized = []
+
         for item in claims:
             if isinstance(item, dict) and "claim" in item:
-                normalised.append(item)
-            elif isinstance(item, str):
-                normalised.append({"claim": item, "type": "other"})
+                normalized.append(item)
 
-        return normalised
+            elif isinstance(item, str):
+                normalized.append({
+                    "claim": item,
+                    "type": "other"
+                })
+
+        return normalized
 
     except json.JSONDecodeError:
-        lines = [ln.strip("- •*").strip() for ln in raw.split("\n") if ln.strip()]
-        return [{"claim": ln, "type": "other"} for ln in lines if len(ln) > 20]
+        lines = [
+            ln.strip("- •*").strip()
+            for ln in raw.split("\n")
+            if ln.strip()
+        ]
+
+        return [
+            {"claim": ln, "type": "other"}
+            for ln in lines
+            if len(ln) > 20
+        ]
 
     except Exception as e:
-    st.error(f"Claim extraction failed: {e}")
-    return []
+        st.error(f"Claim extraction failed: {e}")
+        return []
