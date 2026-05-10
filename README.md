@@ -2,7 +2,7 @@
 
 > Upload any PDF. Get every factual claim verified against live web data in seconds.
 
-![TruthLens AI Banner](utils\banner.png.png)
+![TruthLens AI Banner](utils/banner.png)
 
 ---
 
