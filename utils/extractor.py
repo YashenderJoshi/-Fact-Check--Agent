@@ -4,6 +4,7 @@ Extract factual claims from document text using Groq API (free).
 """
 
 import json
+import streamlit as st
 import re
 from groq import Groq
 
@@ -76,4 +77,5 @@ def extract_claims(text: str, api_key: str) -> list[dict]:
         return [{"claim": ln, "type": "other"} for ln in lines if len(ln) > 20]
 
     except Exception as e:
-        raise RuntimeError(f"Claim extraction failed: {e}")
+    st.error(f"Claim extraction failed: {e}")
+    return []
